@@ -151,47 +151,17 @@
     <!-- 在这里添加 JavaScript 代码 -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // 修复ZIP文件下载 - 强制正确下载
         document.querySelectorAll('.download-btn').forEach(btn => {
-            btn.addEventListener('click', async function(e) {
-                e.preventDefault();
+            btn.addEventListener('click', function(e) {
+                // 不再阻止默认行为，让浏览器直接处理下载
+                console.log('开始下载:', this.href);
                 
-                const fileUrl = this.getAttribute('href');
-                const fileName = this.getAttribute('download') || fileUrl.split('/').pop();
+                // 添加下载跟踪
+                const fileName = this.getAttribute('download');
+                console.log('文件名:', fileName);
                 
-                try {
-                    console.log('开始下载:', fileUrl);
-                    
-                    // 使用fetch获取文件，确保正确的二进制格式
-                    const response = await fetch(fileUrl);
-                    if (!response.ok) {
-                        throw new Error(`下载失败: ${response.status} ${response.statusText}`);
-                    }
-                    
-                    // 获取文件的二进制数据
-                    const blob = await response.blob();
-                    
-                    // 创建下载链接
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = fileName;
-                    
-                    // 触发下载
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    
-                    // 清理
-                    window.URL.revokeObjectURL(url);
-                    console.log('下载成功:', fileName);
-                    
-                } catch (error) {
-                    console.error('下载错误:', error);
-                    // 备用方案：直接打开链接（让用户手动保存）
-                    alert('自动下载失败，请使用右键"另存为"保存文件');
-                    window.open(fileUrl, '_blank');
-                }
+                // 让浏览器自然处理下载，不介入
+                // 这样文件不会被JavaScript处理，保持原样
             });
         });
     });
