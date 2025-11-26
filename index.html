@@ -107,8 +107,6 @@
         <div class="download-section">
             <h2>下载材质包(压缩文件)</h2>
 			
-            
-			
             <div>
                 <a href="downloads/Some Combination.zip" class="download-btn" download="Some Combination.zip">
                     下载基础材质包
@@ -144,5 +142,54 @@
 			<p class="note">tip: 材质包里可能有一些小问题，比如武器的纹理会错乱，如果是这样，可以试试重新加载一次材质包，或者稍微改动一下材质包。</p>
         </div>
     </div>
+
+    <!-- 在这里添加 JavaScript 代码 -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 修复ZIP文件下载 - 强制正确下载
+        document.querySelectorAll('.download-btn').forEach(btn => {
+            btn.addEventListener('click', async function(e) {
+                e.preventDefault();
+                
+                const fileUrl = this.getAttribute('href');
+                const fileName = this.getAttribute('download') || fileUrl.split('/').pop();
+                
+                try {
+                    console.log('开始下载:', fileUrl);
+                    
+                    // 使用fetch获取文件，确保正确的二进制格式
+                    const response = await fetch(fileUrl);
+                    if (!response.ok) {
+                        throw new Error(`下载失败: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    // 获取文件的二进制数据
+                    const blob = await response.blob();
+                    
+                    // 创建下载链接
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = fileName;
+                    
+                    // 触发下载
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    // 清理
+                    window.URL.revokeObjectURL(url);
+                    console.log('下载成功:', fileName);
+                    
+                } catch (error) {
+                    console.error('下载错误:', error);
+                    // 备用方案：直接打开链接（让用户手动保存）
+                    alert('自动下载失败，请使用右键"另存为"保存文件');
+                    window.open(fileUrl, '_blank');
+                }
+            });
+        });
+    });
+    </script>
 </body>
 </html>
