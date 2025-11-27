@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>文件下载诊断</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .success { color: green; }
+        .error { color: red; }
+        .test-result { margin: 10px 0; padding: 10px; border-left: 4px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>🔧 文件下载诊断工具</h1>
+    <div id="results"></div>
+    
+    <script>
+        async function diagnoseDownload() {
+            const results = document.getElementById('results');
+            const testFiles = [
+                'downloads/skyboxes.zip',
+                'downloads/Some Combination.zip'
+            ];
+            
+            for (const fileUrl of testFiles) {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'test-result';
+                resultDiv.innerHTML = `<h3>测试文件: ${fileUrl}</h3>`;
+                results.appendChild(resultDiv);
+                
+                try {
+                    // 测试1: 检查文件是否存在
+                    resultDiv.innerHTML += `<p>1. 检查文件可访问性...</p>`;
+                    const headResponse = await fetch(fileUrl, { method: 'HEAD' });
+                    
+                    if (!headResponse.ok) {
+                        throw new Error(`HTTP ${headResponse.status}: ${headResponse.statusText}`);
+                    }
+                    
+                    resultDiv.innerHTML += `<p class="success">✅ 文件可访问 (状态码: ${headResponse.status})</p>`;
+                    
+                    // 测试2: 检查文件大小
+                    const contentLength = headResponse.headers.get('content-length');
+                    resultDiv.innerHTML += `<p>📦 服务器报告文件大小: ${contentLength} 字节</p>`;
+                    
+                    // 测试3: 检查Content-Type
+                    const contentType = headResponse.headers.get('content-type');
+                    resultDiv.innerHTML += `<p>📄 Content-Type: ${contentType}</p>`;
+                    
+                    // 测试4: 实际下载并检查
+                    resultDiv.innerHTML += `<p>2. 测试实际下载...</p>`;
+                    const downloadResponse = await fetch(fileUrl);
+                    const blob = await downloadResponse.blob();
+                    
+                    resultDiv.innerHTML += `<p class="success">✅ 下载成功</p>`;
+                    resultDiv.innerHTML += `<p>📊 实际下载大小: ${blob.size} 字节</p>`;
+                    
+                    // 检查大小是否匹配
+                    if (contentLength && parseInt(contentLength) !== blob.size) {
+                        resultDiv.innerHTML += `<p class="error">❌ 文件大小不匹配! 可能被修改</p>`;
+                    } else {
+                        resultDiv.innerHTML += `<p class="success">✅ 文件大小一致</p>`;
+                    }
+                    
+                    // 测试5: 检查文件类型
+                    const firstBytes = await blob.slice(0, 4).arrayBuffer();
+                    const header = new Uint8Array(firstBytes);
+                    const headerHex = Array.from(header).map(b => b.toString(16).padStart(2, '0')).join(' ');
+                    
+                    resultDiv.innerHTML += `<p>🔍 文件头签名: ${headerHex}</p>`;
+                    
+                    // ZIP文件应该以 PK 开头 (50 4B)
+                    if (header[0] === 0x50 && header[1] === 0x4B) {
+                        resultDiv.innerHTML += `<p class="success">✅ 有效的ZIP文件签名 (PK)</p>`;
+                    } else {
+                        resultDiv.innerHTML += `<p class="error">❌ 无效的文件签名! 文件可能损坏或被篡改</p>`;
+                        resultDiv.innerHTML += `<p>期望: 50 4B (PK ZIP签名)，实际: ${headerHex}</p>`;
+                    }
+                    
+                } catch (error) {
+                    resultDiv.innerHTML += `<p class="error">❌ 测试失败: ${error.message}</p>`;
+                }
+                
+                resultDiv.innerHTML += '<hr>';
+            }
+        }
+        
+        // 页面加载后自动运行诊断
+        diagnoseDownload();
+    </script>
+</body>
+</html>
